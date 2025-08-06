@@ -1,0 +1,9 @@
+{
+  "name": "test-project",
+  "created": "2025-08-06T08:25:30Z",
+  "status": "active",
+  "description": "Test project for debugging",
+  "next_task_id": 1,
+  "total_tasks": 0,
+  "completed_tasks": 0
+}

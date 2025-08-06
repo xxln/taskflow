@@ -1,0 +1,91 @@
+#!/opt/anaconda3/bin/python
+"""
+Enhanced task management system with shortcuts and advanced features.
+
+Usage:
+  task-flow [command] [args...]           # Standard CLI
+  task-flow --enhanced [command] [args...]  # Enhanced CLI with shortcuts
+
+Features:
+- Project-based organization with YAML/JSON storage
+- Iteration tracking for complex tasks
+- Advanced search across projects and iterations
+- Task templates for common patterns
+- Quick batch operations
+"""
+
+import sys
+from pathlib import Path
+
+# Add src directory to path for imports
+script_dir = Path(__file__).parent.parent
+src_dir = script_dir / "src"
+sys.path.insert(0, str(src_dir))
+
+
+def main():
+    """Main entry point with enhanced features."""
+    # Check for enhanced mode
+    enhanced_mode = '--enhanced' in sys.argv
+    if enhanced_mode:
+        sys.argv.remove('--enhanced')
+
+    # Auto-detect enhanced commands
+    enhanced_commands = [
+        'quick', 'continue', 'clone', 'search',
+        'new-from-template', 'templates'
+    ]
+    if len(sys.argv) > 1 and sys.argv[1] in enhanced_commands:
+        enhanced_mode = True
+
+    try:
+        if enhanced_mode:
+            # Use enhanced CLI with shortcuts and batch operations
+            from taskflow.enhanced_cli import (
+                setup_enhanced_parser, EnhancedTaskCLI
+            )
+
+            parser = setup_enhanced_parser()
+            args = parser.parse_args()
+
+            if not args.command:
+                parser.print_help()
+                return
+
+            # Route commands
+            enhanced_cli = EnhancedTaskCLI()
+
+            enhanced_command_map = {
+                "quick": enhanced_cli.quick_update,
+                "continue": enhanced_cli.continue_task,
+                "clone": enhanced_cli.clone_task,
+                "search": enhanced_cli.search_tasks,
+                "new-from-template": enhanced_cli.create_from_template,
+                "templates": enhanced_cli.list_templates,
+            }
+
+            if args.command in enhanced_command_map:
+                enhanced_command_map[args.command](args)
+            else:
+                # Fallback to standard CLI
+                from taskflow.cli import main as standard_main
+                standard_main()
+        else:
+            # Use standard CLI
+            from taskflow.cli import main as standard_main
+            standard_main()
+
+    except ImportError as e:
+        print(f"Error importing CLI modules: {e}", file=sys.stderr)
+        print("Falling back to basic CLI...", file=sys.stderr)
+        from taskflow.cli import main as basic_main
+        basic_main()
+    except (KeyboardInterrupt, SystemExit):
+        sys.exit(1)
+    except Exception as e:  # noqa: BLE001
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
