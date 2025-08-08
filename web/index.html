@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Taskflow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { colors: { brand: { DEFAULT: '#5b9cff' } } } } }
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <header class="backdrop-blur bg-slate-950/80 border-b border-slate-800 sticky top-0 z-10">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div class="flex items-center gap-2 text-slate-200 font-semibold">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-brand"></span>
+          Taskflow
+        </div>
+        <div class="ml-auto flex items-center gap-2 w-full max-w-xl">
+          <input id="baseDir" class="flex-1 bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm placeholder:text-slate-500" placeholder="Project root (default: ./projects)" />
+          <button id="setBaseDir" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Set</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-4 grid md:grid-cols-[280px_1fr] gap-4">
+      <aside class="bg-slate-900/60 border border-slate-800 rounded-xl p-3">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Projects</h2>
+          <button id="refreshProjects" class="text-xs text-slate-400 hover:text-slate-200">Refresh</button>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <input id="projectName" class="flex-1 bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="New project name" />
+          <button id="createProject" class="px-3 py-2 rounded-md text-sm bg-brand/90 hover:bg-brand">Create</button>
+        </div>
+        <nav id="projects" class="space-y-1 max-h-[70vh] overflow-auto"></nav>
+      </aside>
+
+      <section class="bg-slate-900/60 border border-slate-800 rounded-xl p-3">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Tasks</h2>
+          <div class="flex items-center gap-2">
+            <select id="taskProject" class="bg-slate-950 border border-slate-800 rounded-md px-2 py-1.5 text-sm"></select>
+            <select id="statusFilter" class="bg-slate-950 border border-slate-800 rounded-md px-2 py-1.5 text-sm">
+              <option value="">All</option>
+              <option>TODO</option>
+              <option>IN_PROGRESS</option>
+              <option>DONE</option>
+              <option>ARCHIVED</option>
+            </select>
+            <button id="openNewTask" class="px-3 py-1.5 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">New</button>
+            <button id="refresh" class="px-3 py-1.5 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Refresh</button>
+          </div>
+        </div>
+        <div id="tasks" class="grid gap-2 max-h-[70vh] overflow-auto"></div>
+      </section>
+    </main>
+
+    <!-- New Task Modal -->
+    <div id="modal" class="hidden fixed inset-0 z-20 items-center justify-center">
+      <div class="absolute inset-0 bg-slate-950/70"></div>
+      <div class="relative bg-slate-950 border border-slate-800 rounded-xl w-[520px] max-w-[95vw] p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold text-slate-200">Create Task</h3>
+          <button id="closeModal" class="text-slate-400 hover:text-slate-200">✕</button>
+        </div>
+        <div class="grid gap-2">
+          <input id="taskTitle" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Title" />
+          <textarea id="taskDesc" rows="3" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Description"></textarea>
+          <textarea id="taskNotes" rows="2" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Notes (optional)"></textarea>
+          <div class="flex justify-end gap-2 mt-1">
+            <button id="cancelModal" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Cancel</button>
+            <button id="createTask" class="px-3 py-2 rounded-md text-sm bg-brand/90 hover:bg-brand">Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-sm"></div>
+
+    <script>
+      const API = location.origin
+      let currentProject = ''
+
+      function toast(msg) {
+        const el = document.getElementById('toast')
+        el.textContent = msg
+        el.classList.remove('hidden')
+        setTimeout(() => el.classList.add('hidden'), 1600)
+      }
+
+      function openModal() {
+        document.getElementById('modal').classList.remove('hidden')
+        document.getElementById('taskTitle').focus()
+      }
+      function closeModal() {
+        document.getElementById('modal').classList.add('hidden')
+        document.getElementById('taskTitle').value = ''
+        document.getElementById('taskDesc').value = ''
+        document.getElementById('taskNotes').value = ''
+      }
+
+      function statusBadge(status) {
+        const color = {
+          TODO: 'bg-slate-800 text-slate-300 border-slate-700',
+          IN_PROGRESS: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+          DONE: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+          ARCHIVED: 'bg-slate-700/40 text-slate-400 border-slate-600/60',
+        }[status] || 'bg-slate-800 text-slate-300 border-slate-700'
+        return `<span class="px-2 py-0.5 rounded-full text-[11px] border ${color}">${status}</span>`
+      }
+
+      async function getBaseDir() {
+        const r = await fetch(`${API}/config/base-dir`)
+        const j = await r.json()
+        document.getElementById('baseDir').value = j.base_dir
+      }
+
+      async function setBaseDir() {
+        const path = document.getElementById('baseDir').value.trim()
+        if (!path) return
+        await fetch(`${API}/config/base-dir`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) })
+        await loadProjects()
+        toast('Root updated')
+      }
+
+      async function loadProjects() {
+        const list = document.getElementById('projects')
+        const sel = document.getElementById('taskProject')
+        list.innerHTML = ''
+        sel.innerHTML = ''
+        const r = await fetch(`${API}/projects`)
+        const projects = await r.json()
+        projects.forEach(name => {
+          const item = document.createElement('button')
+          item.className = `w-full text-left px-2 py-1.5 rounded-md text-sm border border-transparent hover:border-slate-700 ${name===currentProject?'bg-slate-800/70':''}`
+          item.textContent = name
+          item.dataset.project = name
+          item.addEventListener('click', () => selectProject(name))
+          list.appendChild(item)
+          const opt = document.createElement('option')
+          opt.value = name; opt.textContent = name; sel.appendChild(opt)
+        })
+        if (!currentProject && projects.length) selectProject(projects[0])
+      }
+
+      async function selectProject(name) {
+        currentProject = name
+        document.getElementById('taskProject').value = name
+        ;[...document.querySelectorAll('#projects [data-project]')].forEach(el => {
+          el.classList.toggle('bg-slate-800/70', el.dataset.project===name)
+        })
+        await loadTasks(name)
+      }
+
+      async function createProject() {
+        const name = document.getElementById('projectName').value.trim()
+        if (!name) return
+        const r = await fetch(`${API}/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
+        if (r.ok) {
+          document.getElementById('projectName').value = ''
+          toast('Project created')
+          await loadProjects()
+        }
+      }
+
+      async function loadTasks(project) {
+        const el = document.getElementById('tasks')
+        el.innerHTML = ''
+        const filter = document.getElementById('statusFilter').value
+        const r = await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks`)
+        const tasks = await r.json()
+        tasks
+          .filter(t => !filter || t.status===filter)
+          .forEach(t => {
+            const card = document.createElement('div')
+            card.className = 'border border-slate-800 bg-slate-950 rounded-md p-3'
+            card.innerHTML = `
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-medium text-slate-200">${t.id} — ${t.title}</div>
+                ${statusBadge(t.status)}
+              </div>
+              ${t.description ? `<div class="mt-1 text-xs text-slate-400">${t.description}</div>` : ''}
+              <div class="mt-2 flex items-center gap-2">
+                <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="start" data-id="${t.id}">Start/Iter</button>
+                <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="done" data-id="${t.id}">Complete</button>
+                <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="note" data-id="${t.id}">Add Note</button>
+                <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="edit" data-id="${t.id}">Edit</button>
+              </div>
+            `
+            card.addEventListener('click', (e) => handleTaskAction(e, project))
+            el.appendChild(card)
+          })
+      }
+
+      async function handleTaskAction(e, project) {
+        const btn = e.target.closest('button[data-action]')
+        if (!btn) return
+        const id = btn.dataset.id
+        const action = btn.dataset.action
+        if (action==='start') {
+          await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/start`, { method: 'POST' })
+          toast('Iteration started')
+        } else if (action==='done') {
+          await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'DONE' }) })
+          toast('Task completed')
+        } else if (action==='note') {
+          const note = prompt('Add progress note:')
+          if (note && note.trim()) {
+            await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/note`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note }) })
+            toast('Note added')
+          }
+        } else if (action==='edit') {
+          const newTitle = prompt('New title (blank to keep)')
+          const newDesc = prompt('New description (blank to keep)')
+          const payload = {}
+          if (newTitle && newTitle.trim()) payload.title = newTitle.trim()
+          if (newDesc !== null) payload.description = newDesc
+          if (Object.keys(payload).length) {
+            await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            toast('Task updated')
+          }
+        }
+        await loadTasks(project)
+      }
+
+      async function createTask() {
+        const title = document.getElementById('taskTitle').value.trim()
+        const project = document.getElementById('taskProject').value
+        const description = document.getElementById('taskDesc').value
+        const notes = document.getElementById('taskNotes').value
+        if (!title || !project) return
+        await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, notes }) })
+        closeModal()
+        toast('Task created')
+        await loadTasks(project)
+      }
+
+      // Wire events
+      document.getElementById('setBaseDir').addEventListener('click', setBaseDir)
+      document.getElementById('createProject').addEventListener('click', createProject)
+      document.getElementById('refreshProjects').addEventListener('click', loadProjects)
+      document.getElementById('refresh').addEventListener('click', () => currentProject && loadTasks(currentProject))
+      document.getElementById('openNewTask').addEventListener('click', openModal)
+      document.getElementById('closeModal').addEventListener('click', closeModal)
+      document.getElementById('cancelModal').addEventListener('click', closeModal)
+      document.getElementById('createTask').addEventListener('click', createTask)
+      document.getElementById('statusFilter').addEventListener('change', () => currentProject && loadTasks(currentProject))
+
+      (async function init(){
+        await getBaseDir()
+        await loadProjects()
+      })()
+    </script>
+  </body>
+  </html>
+

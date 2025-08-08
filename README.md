@@ -1,19 +1,27 @@
-# Enhanced Task Management System
+# Taskflow — Local-first Task Management (CLI + API + Minimal UI)
 
 A powerful, lightweight task management system for local development workflows with advanced features like search, templates, and batch operations.
 
 ## 🚀 Quick Start
 
+Using uv
 ```bash
-# Use wrapper script (recommended)
-./task list-projects
+# Install uv if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Or use Python directly
-python main.py list-projects
+# Run CLI (via wrapper or directly)
+./bin/taskflow list-projects
+# or
+uv run taskflow list-projects
 
-# Enhanced commands auto-detected
-./task search "COP curve"
-./task quick "project" "001" -n "Progress update" -s "Fixed issue"
+# Run API + open UI at http://127.0.0.1:8765
+uv run taskflow-server
+```
+
+```bash
+# New client wrapper
+./bin/taskflow create-project demo
+uv run taskflow-server
 ```
 
 ## ✨ Features
@@ -24,59 +32,61 @@ python main.py list-projects
 - **Task templates** for common patterns
 - **Quick batch operations** with shortcuts
 - **Git-friendly** human-readable files
-- **Zero dependencies** (uses standard library only)
+- **Local-first** file storage (YAML/JSON)
+- **FastAPI** backend with simple REST endpoints
+- **Minimal web UI** for creating/editing/logging tasks
 
 ## 📋 Core Commands
 
-### Project Management
+### Project Management (CLI)
 ```bash
 # Create project
-./task create-project "web-app" -d "New web application"
+./bin/taskflow create-project "web-app" -d "New web application"
 
 # List all projects
-./task list-projects
+./bin/taskflow list-projects
 
 # Project status overview
-./task status "web-app"
+./bin/taskflow status "web-app"
 ```
 
-### Task Management
+### Task Management (CLI)
 ```bash
 # Create task
-./task create-task "web-app" "Setup authentication" -d "Implement user login"
+./bin/taskflow create-task "web-app" "Setup authentication" -d "Implement user login"
 
 # List tasks
-./task list-tasks "web-app"
+./bin/taskflow list-tasks "web-app"
 
 # Show task details
-./task show-task "web-app" "001"
+./bin/taskflow show-task "web-app" "001"
 
 # Start working on task
-./task start-task "web-app" "001"
+./bin/taskflow start-task "web-app" "001"
 
 # Complete task
-./task complete-task "web-app" "001"
+./bin/taskflow complete-task "web-app" "001"
 ```
 
-### Iteration Management
+### Iteration Management (CLI)
 ```bash
 # Add progress notes
-./task add-iteration-note "web-app" "001" "Implemented JWT tokens"
+./bin/taskflow add-iteration-note "web-app" "001" "Implemented JWT tokens"
 
 # Set summary
-./task set-iteration-summary "web-app" "001" "Authentication working"
+./bin/taskflow set-iteration-summary "web-app" "001" "Authentication working"
 
 # Add user feedback
-./task add-user-feedback "web-app" "001" "Consider password reset"
+./bin/taskflow add-user-feedback "web-app" "001" "Consider password reset"
 
 # Set next steps
-./task set-next-steps "web-app" "001" "Add unit tests"
+./bin/taskflow set-next-steps "web-app" "001" "Add unit tests"
 
 # Complete iteration
-./task complete-iteration "web-app" "001"
+./bin/taskflow complete-iteration "web-app" "001"
 ```
 
-## 🔥 Enhanced Features
+## 🔥 Enhanced CLI Features
 
 ### Quick Batch Updates
 ```bash
@@ -102,19 +112,19 @@ python main.py list-projects
 ### Cross-Project Search
 ```bash
 # Search all projects
-./task search "heat pump"
+./bin/taskflow search "heat pump"
 
 # Filter by status
-./task search "optimization" -s "IN_PROGRESS"
+./bin/taskflow search "optimization" -s "IN_PROGRESS"
 ```
 
 ### Template System
 ```bash
 # List available templates
-./task templates
+./bin/taskflow templates
 
 # Create from template
-./task new-from-template "project" "bug_investigation" \
+./bin/taskflow new-from-template "project" "bug_investigation" \
   -v issue_description="Heat pump output limited" \
   -v config_file="config.json"
 ```
@@ -122,18 +132,22 @@ python main.py list-projects
 ## 📁 File Structure
 
 ```
-tasks/
-├── main.py              # Enhanced entry point
-├── task                 # Wrapper script
-├── tasks/               # Core modules
-│   ├── cli.py          # Standard CLI
-│   ├── enhanced_cli.py # Enhanced CLI with shortcuts
-│   ├── manager.py      # Business logic
-│   ├── models.py       # Data structures
-│   ├── storage.py      # File operations
-│   ├── search_utils.py # Search functionality
-│   └── templates.py    # Template system
-└── projects/           # Project data
+taskflow/
+├── pyproject.toml           # uv project config
+├── bin/taskflow             # client wrapper (cli/api)
+├── web/                     # Minimal UI (static)
+│   └── index.html
+├── src/taskflow/
+│   ├── __main__.py          # unified entrypoint (cli/api)
+│   ├── server.py            # FastAPI app
+│   ├── cli.py               # Standard CLI
+│   ├── enhanced_cli.py      # Enhanced CLI
+│   ├── manager.py           # Business logic
+│   ├── models.py            # Data models
+│   ├── storage.py           # File operations
+│   ├── search_utils.py      # Search
+│   └── templates.py         # Templates
+└── projects/                # Data root (configurable)
     └── {project}/
         ├── project.json
         └── tasks/
@@ -222,6 +236,40 @@ next_steps: |
 
 ## 🛠 Development Integration
 
+### API Endpoints (MVP)
+- GET `/projects`
+- POST `/projects` { name, description? }
+- GET `/projects/{project}/status`
+- GET `/projects/{project}/tasks`
+- POST `/projects/{project}/tasks` { title, description?, notes? }
+- GET `/projects/{project}/tasks/{taskId}`
+- PATCH `/projects/{project}/tasks/{taskId}` { title?, description?, notes?, status? }
+- POST `/projects/{project}/tasks/{taskId}/iterations/start`
+- POST `/projects/{project}/tasks/{taskId}/iterations/note` { note }
+- POST `/projects/{project}/tasks/{taskId}/iterations/summary` { summary }
+- POST `/projects/{project}/tasks/{taskId}/iterations/complete`
+
+### MCP Server (MVP)
+- Start server: `uv run taskflow-mcp` (WebSocket on `ws://127.0.0.1:8787`)
+- Message format: JSON-RPC 2.0
+- Methods:
+  - `mcp.getProjects`
+  - `mcp.setBaseDir` { path }
+  - `mcp.listTasks` { project, filters? }
+  - `mcp.createTask` { project, title, description?, notes? }
+  - `mcp.updateTask` { project, task_id, fields }
+  - `mcp.deleteTask` { project, task_id }
+  - `mcp.addNote` { project, task_id, note }
+  - `mcp.startIteration` { project, task_id }
+  - `mcp.completeIteration` { project, task_id }
+  - `mcp.projectStatus` { project }
+
+- Notifications:
+  - `mcp.taskUpdated` { project, task_id }
+  - `mcp.projectUpdated` { project }
+
+- Example client: `uv run python -m taskflow.mcp_client_example`
+
 ### Cursor IDE Integration
 - **Terminal commands**: Run from integrated terminal
 - **File-based storage**: Human-readable diffs for Git
@@ -238,25 +286,25 @@ git commit -m "Add project tasks and progress"
 git diff tasks/projects/my-project/tasks/001-task.yaml
 ```
 
-### Development Example
+### Development Example (CLI)
 ```bash
 # 1. Start feature work
-./task create-project "feature-auth" -d "Authentication system"
-./task create-task "feature-auth" "Database schema" -d "User tables"
+./bin/taskflow create-project "feature-auth" -d "Authentication system"
+./bin/taskflow create-task "feature-auth" "Database schema" -d "User tables"
 
 # 2. Track progress
-./task start-task "feature-auth" "001"
-./task add-iteration-note "feature-auth" "001" "Created migration"
+./bin/taskflow start-task "feature-auth" "001"
+./bin/taskflow add-iteration-note "feature-auth" "001" "Created migration"
 
 # 3. Continue work
-./task quick "feature-auth" "001" \
+./bin/taskflow quick "feature-auth" "001" \
   -n "Added password hashing" \
   -s "Schema complete" \
   -x "Implement API endpoints"
 
 # 4. Complete and review
-./task complete-task "feature-auth" "001"
-./task status "feature-auth"
+./bin/taskflow complete-task "feature-auth" "001"
+./bin/taskflow status "feature-auth"
 ```
 
 ## 🔧 Advanced Usage
@@ -329,24 +377,24 @@ If upgrading from the basic version:
 Real-world development workflow:
 ```bash
 # Investigation phase
-./task new-from-template "ies-single-step" "bug_investigation" \
+./bin/taskflow new-from-template "ies-single-step" "bug_investigation" \
   -v issue_description="Heat pump max load ratio not working" \
   -v config_file="ies-configuration.json"
 
 # During investigation  
-./task quick "ies-single-step" "002" \
+./bin/taskflow quick "ies-single-step" "002" \
   -n "Root cause: COP curve only goes to 100%" \
   -s "Issue identified in controller.py"
 
 # Implementation
-./task continue "ies-single-step" "002" -r "Implementing fix"
-./task quick "ies-single-step" "002" \
+./bin/taskflow continue "ies-single-step" "002" -r "Implementing fix"
+uv run taskflow-enhanced quick "ies-single-step" "002" \
   -n "Added max_load_ratio check" \
   -s "Fix implemented and tested" \
   -x "Deploy to production"
 
 # Completion
-./task complete-task "ies-single-step" "002"
+./bin/taskflow complete-task "ies-single-step" "002"
 ```
 
 This enhanced system transforms simple task tracking into a comprehensive development workflow assistant while maintaining the simplicity and local-first approach of the original design.

@@ -155,14 +155,20 @@ class TaskTemplates:
     }
     
     def __init__(self, template_dir: str = "tasks/templates"):
-        """Initialize template manager."""
+        """Initialize template manager.
+
+        Note: We no longer auto-create the template directory to avoid
+        creating an empty top-level `tasks/` folder. The directory will be
+        created on-demand when saving a custom template.
+        """
         self.template_dir = Path(template_dir)
-        self.template_dir.mkdir(exist_ok=True, parents=True)
         self.templates = self.DEFAULT_TEMPLATES.copy()
         self._load_custom_templates()
     
     def _load_custom_templates(self):
-        """Load custom templates from template directory."""
+        """Load custom templates from template directory if it exists."""
+        if not self.template_dir.exists():
+            return
         for template_file in self.template_dir.glob("*.json"):
             try:
                 with open(template_file, 'r') as f:
@@ -181,7 +187,8 @@ class TaskTemplates:
         return list(self.templates.keys())
     
     def save_custom_template(self, name: str, template: Dict[str, str]):
-        """Save a custom template."""
+        """Save a custom template (creates directory on demand)."""
+        self.template_dir.mkdir(parents=True, exist_ok=True)
         template_file = self.template_dir / f"{name}.json"
         with open(template_file, 'w') as f:
             json.dump(template, f, indent=2)
