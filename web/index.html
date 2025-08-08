@@ -16,9 +16,16 @@
           <span class="inline-block w-2.5 h-2.5 rounded-full bg-brand"></span>
           Taskflow
         </div>
-        <div class="ml-auto flex items-center gap-2 w-full max-w-xl">
+        <div class="ml-auto flex items-center gap-2 w-full max-w-3xl">
           <input id="baseDir" class="flex-1 bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm placeholder:text-slate-500" placeholder="Project root (default: ./projects)" />
           <button id="setBaseDir" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Set</button>
+          <select id="bgStyle" class="bg-slate-900 border border-slate-800 rounded-md px-2 py-2 text-sm">
+            <option value="dark">Dark</option>
+            <option value="gradient">Gradient</option>
+            <option value="grid">Grid</option>
+            <option value="light">Light</option>
+          </select>
+          <button id="openAiSettings" title="AI Settings" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">AI</button>
         </div>
       </div>
     </header>
@@ -68,10 +75,109 @@
           <input id="taskTitle" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Title" />
           <textarea id="taskDesc" rows="3" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Description"></textarea>
           <textarea id="taskNotes" rows="2" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Notes (optional)"></textarea>
-          <div class="flex justify-end gap-2 mt-1">
-            <button id="cancelModal" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Cancel</button>
-            <button id="createTask" class="px-3 py-2 rounded-md text-sm bg-brand/90 hover:bg-brand">Create</button>
+          <div class="flex items-center justify-between gap-2 mt-1">
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+              <button id="aiTaskTitle" class="px-2 py-1 rounded border border-slate-700 hover:bg-slate-800">Polish Title ✨</button>
+              <button id="aiTaskDesc" class="px-2 py-1 rounded border border-slate-700 hover:bg-slate-800">Polish Description ✨</button>
+              <button id="aiTaskNotes" class="px-2 py-1 rounded border border-slate-700 hover:bg-slate-800">Polish Notes ✨</button>
+            </div>
+            <div class="flex gap-2">
+              <button id="cancelModal" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Cancel</button>
+              <button id="createTask" class="px-3 py-2 rounded-md text-sm bg-brand/90 hover:bg-brand">Create</button>
+            </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Edit Task Modal -->
+      <div id="editModal" class="hidden fixed inset-0 z-20 items-center justify-center">
+        <div class="absolute inset-0 bg-slate-950/70"></div>
+        <div class="relative bg-slate-950 border border-slate-800 rounded-xl w-[560px] max-w-[95vw] p-4 shadow-xl">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold text-slate-200">Edit Task</h3>
+            <button id="editCloseModal" class="text-slate-400 hover:text-slate-200">✕</button>
+          </div>
+          <div class="grid gap-2">
+            <div class="text-xs text-slate-400" id="editTaskId"></div>
+            <div class="grid md:grid-cols-2 gap-2">
+              <input id="editTaskTitle" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Title" />
+              <select id="editTaskStatus" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm">
+                <option value="TODO">TODO</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+              </select>
+            </div>
+            <textarea id="editTaskDesc" rows="3" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Description"></textarea>
+            <textarea id="editTaskNotes" rows="2" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Notes"></textarea>
+            <div class="flex items-center justify-between gap-2 mt-1">
+              <div class="flex items-center gap-2 text-xs text-slate-400">
+                <button id="aiEditTitle" class="px-2 py-1 rounded border border-slate-700 hover:bg-slate-800">Polish Title ✨</button>
+                <button id="aiEditDesc" class="px-2 py-1 rounded border border-slate-700 hover:bg-slate-800">Polish Description ✨</button>
+                <button id="aiEditNotes" class="px-2 py-1 rounded border border-slate-700 hover:bg-slate-800">Polish Notes ✨</button>
+              </div>
+              <div class="flex gap-2">
+                <button id="editCancelModal" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Cancel</button>
+                <button id="saveEditTask" class="px-3 py-2 rounded-md text-sm bg-brand/90 hover:bg-brand">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- Iteration Modal -->
+    <div id="iterModal" class="hidden fixed inset-0 z-20 items-center justify-center">
+      <div class="absolute inset-0 bg-slate-950/70"></div>
+      <div class="relative bg-slate-950 border border-slate-800 rounded-xl w-[720px] max-w-[95vw] p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold text-slate-200">Iteration Details</h3>
+          <button id="iterCloseModal" class="text-slate-400 hover:text-slate-200">✕</button>
+        </div>
+        <div class="grid gap-2">
+          <div class="text-xs text-slate-400" id="iterTaskMeta"></div>
+          <textarea id="iterSummary" rows="3" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Summary"></textarea>
+          <div class="flex justify-end -mt-1">
+            <button id="aiIterSummary" class="px-2 py-1 text-xs rounded border border-slate-700 hover:bg-slate-800">Polish Summary ✨</button>
+          </div>
+          <textarea id="iterFeedback" rows="3" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="User feedback"></textarea>
+          <div class="flex justify-end -mt-1">
+            <button id="aiIterFeedback" class="px-2 py-1 text-xs rounded border border-slate-700 hover:bg-slate-800">Polish Feedback ✨</button>
+          </div>
+          <textarea id="iterNextSteps" rows="3" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="Next steps"></textarea>
+          <div class="flex justify-end -mt-1">
+            <button id="aiIterNextSteps" class="px-2 py-1 text-xs rounded border border-slate-700 hover:bg-slate-800">Polish Next Steps ✨</button>
+          </div>
+          <div class="flex justify-between items-center mt-1">
+            <div class="text-xs text-slate-500" id="iterStatusInfo"></div>
+            <div class="flex gap-2">
+              <button id="iterComplete" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Complete Iteration</button>
+              <button id="iterSave" class="px-3 py-2 rounded-md text-sm bg-brand/90 hover:bg-brand">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Settings Modal -->
+    <div id="aiModal" class="hidden fixed inset-0 z-20 items-center justify-center">
+      <div class="absolute inset-0 bg-slate-950/70"></div>
+      <div class="relative bg-slate-950 border border-slate-800 rounded-xl w-[520px] max-w-[95vw] p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-semibold text-slate-200">AI Settings</h3>
+          <button id="aiCloseModal" class="text-slate-400 hover:text-slate-200">✕</button>
+        </div>
+        <div class="grid gap-2">
+          <input id="aiApiKey" type="password" class="bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm" placeholder="OpenRouter API Key" />
+          <div class="flex items-center gap-2">
+            <select id="aiModel" class="flex-1 bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm"></select>
+            <button id="aiRefreshModels" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Refresh</button>
+          </div>
+          <div class="flex justify-end gap-2 mt-1">
+            <button id="aiCancelModal" class="px-3 py-2 rounded-md text-sm bg-slate-800 border border-slate-700 hover:bg-slate-700">Cancel</button>
+            <button id="aiSaveSettings" class="px-3 py-2 rounded-md text-sm bg-brand/90 hover:bg-brand">Save</button>
+          </div>
+          <div class="text-[11px] text-slate-500">Your API key is stored locally in your browser's localStorage.</div>
         </div>
       </div>
     </div>
@@ -81,7 +187,9 @@
 
     <script>
       const API = location.origin
-      let currentProject = ''
+        let currentProject = ''
+        let editContext = null
+        let iterContext = null
 
       function toast(msg) {
         const el = document.getElementById('toast')
@@ -99,6 +207,129 @@
         document.getElementById('taskTitle').value = ''
         document.getElementById('taskDesc').value = ''
         document.getElementById('taskNotes').value = ''
+      }
+
+      async function openEditModal(project, id) {
+        editContext = { project, id }
+        const modal = document.getElementById('editModal')
+        modal.classList.remove('hidden')
+        // Pre-fill from server
+        try {
+          const r = await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}`)
+          const t = await r.json()
+          const task = t.task || t
+          document.getElementById('editTaskId').textContent = `Task ${task.id} — ${project}`
+          document.getElementById('editTaskTitle').value = task.title || ''
+          document.getElementById('editTaskDesc').value = task.description || ''
+          document.getElementById('editTaskNotes').value = task.notes || ''
+          document.getElementById('editTaskStatus').value = task.status || 'TODO'
+          document.getElementById('editTaskTitle').focus()
+        } catch (e) {
+          toast('Failed to load task')
+        }
+      }
+
+      function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden')
+        document.getElementById('editTaskId').textContent = ''
+        document.getElementById('editTaskTitle').value = ''
+        document.getElementById('editTaskDesc').value = ''
+        document.getElementById('editTaskNotes').value = ''
+        document.getElementById('editTaskStatus').value = 'TODO'
+        editContext = null
+      }
+
+      async function saveEditTask() {
+        if (!editContext) return
+        const { project, id } = editContext
+        const payload = {
+          title: document.getElementById('editTaskTitle').value.trim(),
+          description: document.getElementById('editTaskDesc').value,
+          notes: document.getElementById('editTaskNotes').value,
+          status: document.getElementById('editTaskStatus').value,
+        }
+        // Remove empty title to avoid clearing accidentally
+        if (!payload.title) delete payload.title
+        try {
+          await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          toast('Task updated')
+          closeEditModal()
+          await loadTasks(project)
+        } catch (e) {
+          toast('Failed to update task')
+        }
+      }
+
+      // Iteration modal helpers
+      async function openIterModal(project, id) {
+        iterContext = { project, id }
+        const modal = document.getElementById('iterModal')
+        modal.classList.remove('hidden')
+        document.getElementById('iterTaskMeta').textContent = `Task ${id} — ${project}`
+        try {
+          const r = await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/current`)
+          if (r.ok) {
+            const it = await r.json()
+            document.getElementById('iterSummary').value = it.summary || ''
+            document.getElementById('iterFeedback').value = it.user_feedback || ''
+            document.getElementById('iterNextSteps').value = it.next_steps || ''
+            document.getElementById('iterStatusInfo').textContent = `Iteration ${it.iteration} — ${it.status}`
+          } else {
+            document.getElementById('iterSummary').value = ''
+            document.getElementById('iterFeedback').value = ''
+            document.getElementById('iterNextSteps').value = ''
+            document.getElementById('iterStatusInfo').textContent = 'No active iteration. Use Start/Iter to begin.'
+          }
+        } catch (e) {
+          toast('Failed to load iteration')
+        }
+      }
+
+      function closeIterModal() {
+        document.getElementById('iterModal').classList.add('hidden')
+        document.getElementById('iterTaskMeta').textContent = ''
+        document.getElementById('iterSummary').value = ''
+        document.getElementById('iterFeedback').value = ''
+        document.getElementById('iterNextSteps').value = ''
+        document.getElementById('iterStatusInfo').textContent = ''
+        iterContext = null
+      }
+
+      async function saveIterDetails() {
+        if (!iterContext) return
+        const { project, id } = iterContext
+        const summary = document.getElementById('iterSummary').value
+        const user_feedback = document.getElementById('iterFeedback').value
+        const next_steps = document.getElementById('iterNextSteps').value
+        try {
+          await Promise.all([
+            fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/summary`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ summary }) }),
+            fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback: user_feedback }) }),
+            fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/next-steps`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ next_steps }) }),
+          ])
+          toast('Iteration saved')
+          closeIterModal()
+          await loadTasks(project)
+        } catch (e) {
+          toast('Failed to save iteration')
+        }
+      }
+
+      async function completeIter() {
+        if (!iterContext) return
+        const { project, id } = iterContext
+        try {
+          await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/complete`, { method: 'POST' })
+          toast('Iteration completed')
+          closeIterModal()
+          await loadTasks(project)
+        } catch (e) {
+          toast('Failed to complete iteration')
+        }
       }
 
       function statusBadge(status) {
@@ -186,6 +417,7 @@
                 <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="start" data-id="${t.id}">Start/Iter</button>
                 <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="done" data-id="${t.id}">Complete</button>
                 <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="note" data-id="${t.id}">Add Note</button>
+                <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="iter" data-id="${t.id}">Iter Details</button>
                 <button class="px-2 py-1 text-xs rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700" data-action="edit" data-id="${t.id}">Edit</button>
               </div>
             `
@@ -211,18 +443,14 @@
             await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}/iterations/note`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note }) })
             toast('Note added')
           }
+        } else if (action==='iter') {
+          await openIterModal(project, id)
         } else if (action==='edit') {
-          const newTitle = prompt('New title (blank to keep)')
-          const newDesc = prompt('New description (blank to keep)')
-          const payload = {}
-          if (newTitle && newTitle.trim()) payload.title = newTitle.trim()
-          if (newDesc !== null) payload.description = newDesc
-          if (Object.keys(payload).length) {
-            await fetch(`${API}/projects/${encodeURIComponent(project)}/tasks/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            toast('Task updated')
-          }
+          await openEditModal(project, id)
         }
-        await loadTasks(project)
+        if (action !== 'edit') {
+          await loadTasks(project)
+        }
       }
 
       async function createTask() {
@@ -237,6 +465,140 @@
         await loadTasks(project)
       }
 
+      // Background styles
+      function applyBackground(style) {
+        const body = document.body
+        body.classList.remove('bg-slate-950', 'bg-white')
+        body.style.backgroundImage = ''
+        body.style.backgroundColor = ''
+        body.style.color = ''
+        if (style === 'dark') {
+          body.classList.add('bg-slate-950')
+        } else if (style === 'gradient') {
+          body.style.backgroundImage = 'radial-gradient(1000px 600px at -10% -20%, rgba(37,99,235,0.15), transparent), radial-gradient(800px 500px at 110% 10%, rgba(16,185,129,0.12), transparent)'
+          body.style.backgroundColor = '#0b1220'
+        } else if (style === 'grid') {
+          body.style.backgroundImage = 'linear-gradient(transparent, transparent 31px, rgba(100,116,139,0.08) 32px), linear-gradient(90deg, transparent, transparent 31px, rgba(100,116,139,0.08) 32px)'
+          body.style.backgroundSize = '32px 32px'
+          body.style.backgroundColor = '#0b1220'
+        } else if (style === 'light') {
+          body.classList.add('bg-white')
+          body.style.color = '#0f172a'
+        }
+        localStorage.setItem('bgStyle', style)
+      }
+
+      function initBackground() {
+        const style = localStorage.getItem('bgStyle') || 'dark'
+        const sel = document.getElementById('bgStyle')
+        if (sel) sel.value = style
+        applyBackground(style)
+      }
+
+      // AI settings and polish
+      function getAiSettings() {
+        return {
+          key: localStorage.getItem('aiKey') || '',
+          model: localStorage.getItem('aiModel') || 'openrouter/auto'
+        }
+      }
+
+      async function aiPolish(text, instruction = 'Improve clarity, grammar, and concision. Keep meaning the same. Return only the improved text.') {
+        const { key, model } = getAiSettings()
+        if (!key) { toast('Set AI key first'); return text }
+        try {
+          const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${key}`,
+              // Optional attribution headers recommended by OpenRouter
+              'HTTP-Referer': location.origin,
+              'X-Title': 'Taskflow'
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: instruction },
+                { role: 'user', content: text }
+              ],
+              temperature: 0.2
+            })
+          })
+          if (!r.ok) throw new Error('AI request failed')
+          const j = await r.json()
+          return j.choices?.[0]?.message?.content?.trim() || text
+        } catch (e) {
+          toast('AI error')
+          return text
+        }
+      }
+
+      function wirePolish(btnId, inputId, label) {
+        const btn = document.getElementById(btnId)
+        const input = document.getElementById(inputId)
+        if (!btn || !input) return
+        const orig = btn.textContent
+        btn.addEventListener('click', async () => {
+          btn.disabled = true
+          btn.textContent = 'Polishing…'
+          const improved = await aiPolish(input.value, label)
+          if (improved) input.value = improved
+          btn.disabled = false
+          btn.textContent = orig
+        })
+      }
+
+      function openAiModal() {
+        const { key, model } = getAiSettings()
+        document.getElementById('aiApiKey').value = key
+        ensureModelsLoaded().then(() => {
+          document.getElementById('aiModel').value = model
+        })
+        document.getElementById('aiModal').classList.remove('hidden')
+      }
+      function closeAiModal() { document.getElementById('aiModal').classList.add('hidden') }
+      function saveAiSettings() {
+        const key = document.getElementById('aiApiKey').value.trim()
+        const model = document.getElementById('aiModel').value
+        if (key) localStorage.setItem('aiKey', key)
+        localStorage.setItem('aiModel', model)
+        toast('AI settings saved')
+        closeAiModal()
+      }
+
+      async function loadModels() {
+        const sel = document.getElementById('aiModel')
+        if (!sel) return
+        sel.innerHTML = ''
+        const { key } = getAiSettings()
+        const headers = { 'Content-Type': 'application/json' }
+        if (key) headers['Authorization'] = `Bearer ${key}`
+        try {
+          const r = await fetch('https://openrouter.ai/api/v1/models', { headers })
+          const j = await r.json()
+          const models = (j?.data || []).map(m => m.id)
+          const defaultModels = ['openrouter/auto', 'openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet', 'google/gemini-1.5-pro']
+          const all = Array.from(new Set([...defaultModels, ...models]))
+          all.forEach(id => {
+            const opt = document.createElement('option')
+            opt.value = id
+            opt.textContent = id
+            sel.appendChild(opt)
+          })
+        } catch (e) {
+          // Fallback to defaults
+          ;['openrouter/auto','openai/gpt-4o-mini','anthropic/claude-3.5-sonnet','google/gemini-1.5-pro'].forEach(id => {
+            const opt = document.createElement('option'); opt.value = id; opt.textContent = id; sel.appendChild(opt)
+          })
+        }
+      }
+
+      let modelsLoaded = false
+      async function ensureModelsLoaded() {
+        if (!modelsLoaded) { await loadModels(); modelsLoaded = true }
+      }
+
       // Wire events
       document.getElementById('setBaseDir').addEventListener('click', setBaseDir)
       document.getElementById('createProject').addEventListener('click', createProject)
@@ -246,11 +608,41 @@
       document.getElementById('closeModal').addEventListener('click', closeModal)
       document.getElementById('cancelModal').addEventListener('click', closeModal)
       document.getElementById('createTask').addEventListener('click', createTask)
+      document.getElementById('editCloseModal').addEventListener('click', closeEditModal)
+      document.getElementById('editCancelModal').addEventListener('click', closeEditModal)
+      document.getElementById('saveEditTask').addEventListener('click', saveEditTask)
       document.getElementById('statusFilter').addEventListener('change', () => currentProject && loadTasks(currentProject))
+      // Background
+      document.getElementById('bgStyle').addEventListener('change', (e) => applyBackground(e.target.value))
+      // AI settings
+      document.getElementById('openAiSettings').addEventListener('click', openAiModal)
+      document.getElementById('aiCloseModal').addEventListener('click', closeAiModal)
+      document.getElementById('aiCancelModal').addEventListener('click', closeAiModal)
+      document.getElementById('aiSaveSettings').addEventListener('click', saveAiSettings)
+      document.getElementById('aiRefreshModels').addEventListener('click', async (e) => {
+        e.target.disabled = true; e.target.textContent = 'Refreshing…'
+        modelsLoaded = false; await ensureModelsLoaded()
+        e.target.disabled = false; e.target.textContent = 'Refresh'
+      })
+      // AI polish wiring
+      wirePolish('aiTaskTitle', 'taskTitle', 'Improve the task title for clarity and brevity. Return only the improved title.')
+      wirePolish('aiTaskDesc', 'taskDesc', 'Improve the task description for clarity, structure, and specificity. Keep technical details. Return only the improved text.')
+      wirePolish('aiTaskNotes', 'taskNotes', 'Improve the notes for clarity and usefulness. Return only the improved text.')
+      wirePolish('aiEditTitle', 'editTaskTitle', 'Improve the task title for clarity and brevity. Return only the improved title.')
+      wirePolish('aiEditDesc', 'editTaskDesc', 'Improve the task description for clarity and structure. Return only the improved text.')
+      wirePolish('aiEditNotes', 'editTaskNotes', 'Improve the notes for clarity. Return only the improved text.')
+      wirePolish('aiIterSummary', 'iterSummary', 'Rewrite the iteration summary clearly and concisely. Return only the improved text.')
+      wirePolish('aiIterFeedback', 'iterFeedback', 'Refine the user feedback to be constructive and actionable. Return only the improved text.')
+      wirePolish('aiIterNextSteps', 'iterNextSteps', 'Rewrite the next steps as clear, specific, and achievable actions. Return only the improved text.')
+      // Iteration modal events
+      document.getElementById('iterCloseModal').addEventListener('click', closeIterModal)
+      document.getElementById('iterSave').addEventListener('click', saveIterDetails)
+      document.getElementById('iterComplete').addEventListener('click', completeIter)
 
       (async function init(){
         await getBaseDir()
         await loadProjects()
+        initBackground()
       })()
     </script>
   </body>

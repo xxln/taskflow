@@ -14,7 +14,7 @@ from .manager import (
     TaskNotFoundError,
     IterationNotFoundError,
 )
-from .models import TaskStatus  # noqa: F401 - reserved for future use
+from .models import TaskStatus as _UnusedTaskStatus  # noqa: F401
 
 
 class AppState:
@@ -136,7 +136,11 @@ def create_task(project: str, payload: Dict[str, Any]) -> Dict[str, Any]:
 @app.get("/projects/{project}/tasks/{task_id}")
 def get_task(project: str, task_id: str) -> Dict[str, Any]:
     try:
-        return state.manager().get_task_details(project, task_id)
+        details = state.manager().get_task_details(project, task_id)
+        current_iter = details.get("current_iteration")
+        if current_iter is not None and hasattr(current_iter, "to_dict"):
+            details["current_iteration"] = current_iter.to_dict()
+        return details
     except (ProjectNotFoundError, TaskNotFoundError) as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -235,6 +239,51 @@ def complete_iteration(project: str, task_id: str) -> Dict[str, str]:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
+@app.get("/projects/{project}/tasks/{task_id}/iterations/current")
+def get_current_iteration(project: str, task_id: str) -> Dict[str, Any]:
+    try:
+        iteration = state.manager().storage.get_current_iteration(
+            project, task_id
+        )
+        if iteration is None:
+            raise HTTPException(status_code=404, detail="No active iteration")
+        return iteration.to_dict()
+    except (ProjectNotFoundError, TaskNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@app.post("/projects/{project}/tasks/{task_id}/iterations/feedback")
+def set_user_feedback(
+    project: str,
+    task_id: str,
+    payload: Dict[str, str],
+) -> Dict[str, str]:
+    feedback = payload.get("feedback")
+    if feedback is None:
+        raise HTTPException(status_code=400, detail="Missing 'feedback'")
+    try:
+        state.manager().add_user_feedback(project, task_id, feedback)
+        return {"ok": "true"}
+    except (IterationNotFoundError, TaskManagerError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.post("/projects/{project}/tasks/{task_id}/iterations/next-steps")
+def set_iteration_next_steps(
+    project: str,
+    task_id: str,
+    payload: Dict[str, str],
+) -> Dict[str, str]:
+    next_steps = payload.get("next_steps")
+    if next_steps is None:
+        raise HTTPException(status_code=400, detail="Missing 'next_steps'")
+    try:
+        state.manager().set_next_steps(project, task_id, next_steps)
+        return {"ok": "true"}
+    except (IterationNotFoundError, TaskManagerError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 def main() -> None:
     import uvicorn
 
@@ -253,5 +302,3 @@ def main() -> None:
         port=8765,
         reload=False,
     )
-
-

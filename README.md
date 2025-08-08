@@ -35,6 +35,19 @@ uv run taskflow-server
 - **Local-first** file storage (YAML/JSON)
 - **FastAPI** backend with simple REST endpoints
 - **Minimal web UI** for creating/editing/logging tasks
+- **AI-assisted text polishing** in the UI (titles, descriptions, notes, iteration fields) via OpenRouter
+- **Customizable background styles** (Dark, Gradient, Grid, Light)
+
+## 🌐 Web UI
+
+### Background styles
+- Use the background selector in the top bar to switch between Dark, Gradient, Grid, or Light. Your choice is saved in `localStorage`.
+
+### AI-assisted editing
+- Click the AI button in the top bar to open AI Settings.
+- Paste your OpenRouter API key and pick a model from the dropdown (the list is fetched dynamically from OpenRouter). Your selections are saved locally as `aiKey` and `aiModel`.
+- In task Create/Edit and Iteration modals, use “Polish ✨” buttons to improve the corresponding field using your selected model.
+- Calls are made to OpenRouter’s Chat Completions API and include attribution headers per their quickstart. See: [OpenRouter Quickstart](https://openrouter.ai/docs/quickstart).
 
 ## 📋 Core Commands
 
@@ -247,6 +260,9 @@ next_steps: |
 - POST `/projects/{project}/tasks/{taskId}/iterations/start`
 - POST `/projects/{project}/tasks/{taskId}/iterations/note` { note }
 - POST `/projects/{project}/tasks/{taskId}/iterations/summary` { summary }
+- GET `/projects/{project}/tasks/{taskId}/iterations/current`
+- POST `/projects/{project}/tasks/{taskId}/iterations/feedback` { feedback }
+- POST `/projects/{project}/tasks/{taskId}/iterations/next-steps` { next_steps }
 - POST `/projects/{project}/tasks/{taskId}/iterations/complete`
 
 ### MCP Server (MVP)
